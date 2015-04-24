@@ -2,14 +2,52 @@
 /* globals module, require */
 
 var Topics = require.main.require('./src/topics'),
+	Posts = require.main.require('./src/posts'),
 	PostTools = require.main.require('./src/postTools'),
 	apiMiddleware = require('./middleware'),
 	errorHandler = require('../../lib/errorHandler'),
-	utils = require('./utils');
+	db = require.main.require('./src/database'),
+	utils = require('./utils'),
+	async = require.main.require('async');
 
 
 module.exports = function(middleware) {
 	var app = require('express').Router();
+
+	function setTimestampToPublishedDate(data, timestamp, callback) {
+		var topicData = data.topicData;
+		var postData = data.postData;
+		var tid = topicData.tid;
+		var pid = postData.pid;
+
+		async.parallel([
+			function (next) {
+				db.setObjectField('topic:' + tid, 'timestamp', timestamp, next);
+			},
+			function (next) {
+				db.sortedSetsAdd([
+					'topics:tid',
+					'cid:' + topicData.cid + ':tids',
+					'cid:' + topicData.cid + ':uid:' + topicData.uid + ':tids',
+					'uid:' + topicData.uid + ':topics'
+				], timestamp, tid, next);
+			},
+			function (next) {
+				db.setObjectField('post:' + pid, 'timestamp', timestamp, next);
+			},
+			function (next) {
+				db.sortedSetsAdd([
+					'posts:pid',
+					'cid:' + topicData.cid + ':pids'
+				], timestamp, pid, next);
+			}
+		], callback);
+	}
+
+	function setHandle(data, handle, callback) {
+		Posts.setPostField(data.postData.pid, 'handle', handle, callback);
+	}
+
 
 	app.route('/')
 		.post(apiMiddleware.requireUser, function(req, res) {
@@ -28,7 +66,26 @@ module.exports = function(middleware) {
 				};
 
 			Topics.post(payload, function(err, data) {
-				return errorHandler.handle(err, res, data);
+
+				if (err) {
+					return errorHandler.handle(err, res, data);
+				}
+
+				var funcs = [];
+				if (req.body.handle) {
+					funcs.push(function (next) {
+						setHandle(data, req.body.handle, next);
+					})
+				}
+				if (req.body.timestamp) {
+					funcs.push(function (next) {
+						setTimestampToPublishedDate(data, req.body.timestamp, next);
+					})
+				}
+				async.parallel(funcs, function (err, result) {
+					return errorHandler.handle(err, res, data);
+				});
+
 			});
 		})
 		.put(apiMiddleware.requireUser, function(req, res) {
