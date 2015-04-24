@@ -21,7 +21,10 @@ module.exports = function(middleware) {
 					cid: req.body.cid,
 					title: req.body.title,
 					content:req.body.content,
-					uid: req.user.uid
+					uid: req.user.uid,
+				    handle: req.body.handle, // always ignored because of uid
+				    thumb: req.body.thumb,
+				    tags: req.body.tags || []
 				};
 
 			Topics.post(payload, function(err, data) {
@@ -36,15 +39,14 @@ module.exports = function(middleware) {
 			var payload = {
 				uid: req.user.uid,
 				pid: req.body.pid,
-				content: req.body.content,
-				options: {}
+				content: req.body.content
 			};
 
 			// Maybe a "set if available" utils method may come in handy
 			if (req.body.handle) { payload.handle = req.body.handle; }
 			if (req.body.title) { payload.title = req.body.title; }
-			if (req.body.topic_thumb) { payload.options.topic_thumb = req.body.topic_thumb; }
-			if (req.body.tags) { payload.options.tags = req.body.tags; }
+			if (req.body.thumb) { payload.thumb = req.body.thumb; }
+			if (req.body.tags) { payload.tags = req.body.tags; }
 
 			PostTools.edit(payload, function(err, returnData) {
 				errorHandler.handle(err, res, returnData);
