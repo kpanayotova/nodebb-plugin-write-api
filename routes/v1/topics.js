@@ -44,8 +44,8 @@ module.exports = function(middleware) {
 		], callback);
 	}
 
-	function setHandle(data, handle, callback) {
-		Posts.setPostField(data.postData.pid, 'handle', handle, callback);
+	function addFields(data, fields, callback) {
+		Posts.setPostFields(data.postData.pid, fields, callback);
 	}
 
 
@@ -72,9 +72,9 @@ module.exports = function(middleware) {
 				}
 
 				var funcs = [];
-				if (req.body.handle) {
+				if (req.body.handle || req.body.url) {
 					funcs.push(function (next) {
-						setHandle(data, req.body.handle, next);
+						addFields(data, {handle: req.body.handle, sourceUrl: req.body.url}, next);
 					})
 				}
 				if (req.body.timestamp) {
