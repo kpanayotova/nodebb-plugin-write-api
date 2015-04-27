@@ -72,9 +72,13 @@ module.exports = function(middleware) {
 				}
 
 				var funcs = [];
-				if (req.body.handle || req.body.url) {
+				if (req.body.handle || req.body.url || req.body.image_url) {
 					funcs.push(function (next) {
-						addFields(data, {handle: req.body.handle, sourceUrl: req.body.url}, next);
+						addFields(data, {
+							handle: req.body.handle,
+							sourceUrl: req.body.url,
+							imageUrl: req.body.image_url
+						}, next);
 					})
 				}
 				if (req.body.timestamp) {
@@ -82,9 +86,14 @@ module.exports = function(middleware) {
 						setTimestampToPublishedDate(data, req.body.timestamp, next);
 					})
 				}
-				async.parallel(funcs, function (err, result) {
+				if (funcs.length) {
+					async.parallel(funcs, function (err, result) {
+						return errorHandler.handle(err, res, data);
+					});
+				}
+				else {
 					return errorHandler.handle(err, res, data);
-				});
+				}
 
 			});
 		})
