@@ -55,6 +55,7 @@ module.exports = function(middleware) {
 				return false;
 			}
 
+			var timestamp = parseInt(req.body.timestamp, 10);
 			var payload = {
 					cid: req.body.cid,
 					title: req.body.title,
@@ -81,9 +82,9 @@ module.exports = function(middleware) {
 						}, next);
 					})
 				}
-				if (req.body.timestamp) {
+				if (timestamp) {
 					funcs.push(function (next) {
-						setTimestampToPublishedDate(data, req.body.timestamp, next);
+						setTimestampToPublishedDate(data, timestamp, next);
 					})
 				}
 				if (funcs.length) {
