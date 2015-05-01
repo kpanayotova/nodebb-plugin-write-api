@@ -25,12 +25,18 @@ module.exports = function(middleware) {
 				db.setObjectField('topic:' + tid, 'timestamp', timestamp, next);
 			},
 			function (next) {
-				db.sortedSetsAdd([
+				var keys = [
 					'topics:tid',
 					'cid:' + topicData.cid + ':tids',
 					'cid:' + topicData.cid + ':uid:' + topicData.uid + ':tids',
 					'uid:' + topicData.uid + ':topics'
-				], timestamp, tid, next);
+				];
+				if (postData.tags) {
+					postData.tags.forEach(function (tag) {
+						keys.push('tag:'+tag+':topics'); // tag recency according to publish date
+					});
+				}
+				db.sortedSetsAdd(keys, timestamp, tid, next);
 			},
 			function (next) {
 				db.setObjectField('post:' + pid, 'timestamp', timestamp, next);
