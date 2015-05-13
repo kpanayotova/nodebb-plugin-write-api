@@ -13,7 +13,7 @@ module.exports = function(/*middleware*/) {
 	var app = require('express').Router();
 
 	app.post('/', apiMiddleware.requireUser, apiMiddleware.requireAdmin, function(req, res) {
-		if (!utils.checkRequired(['username', 'password'], req, res)) {
+		if (!utils.checkRequired(['username'], req, res)) {
 			return false;
 		}
 
@@ -24,12 +24,12 @@ module.exports = function(/*middleware*/) {
 		});
 	});
 
-	app.put('/:uid?', apiMiddleware.requireUser, function(req, res) {
-		if (parseInt(req.params.uid, 10) !== req.user.uid) {
+	app.put('/:uid?', apiMiddleware.requireUser, apiMiddleware.exposeAdmin, function(req, res) {
+		if (parseInt(req.params.uid, 10) !== parseInt(req.user.uid, 10) && !res.locals.isAdmin) {
 			return errorHandler.respond(401, res);
 		}
 
-		Users.updateProfile(res.locals.uid || req.user.uid, req.body, function(err) {
+		Users.updateProfile(req.params.uid, req.body, function(err) {
 			return errorHandler.handle(err, res);
 		});
 	});
